@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\block\inventory;
 
+use pocketmine\player\Player;
 use pocketmine\inventory\SimpleInventory;
 use pocketmine\network\mcpe\protocol\BlockEventPacket;
 use pocketmine\network\mcpe\protocol\types\BlockPosition;
@@ -52,5 +53,17 @@ class ChestInventory extends SimpleInventory implements BlockInventory{
 
 		//event ID is always 1 for a chest
 		$holder->getWorld()->broadcastPacketToViewers($holder, BlockEventPacket::create(BlockPosition::fromVector3($holder), 1, $isOpen ? 1 : 0));
+	}
+
+	public function onOpen(Player $who): void {
+        parent::onOpen($who);
+        $pos = $this->getHolder();
+        $pos->getWorld()->scheduleDelayedBlockUpdate($pos, 1);
+    }
+
+    public function onClose(Player $who): void {
+        parent::onClose($who);
+        $pos = $this->getHolder();
+        $pos->getWorld()->scheduleDelayedBlockUpdate($pos, 1);
 	}
 }
