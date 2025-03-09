@@ -52,7 +52,7 @@ class PowerHelper {
     }
 
     public static function getPower(Block $block, int $face): int {
-        return $this->isNormalBlock($block) ? $this->getAroundStrongPower($block) : self::getWeakPower($block, $face);
+        return $this->isNormalBlock($block) ? $this->getAroundStrongPower($block) : $this->getWeakPower($block, $face);
     }
 
     public static function isSidePowered(Block $block, int $face): bool {
