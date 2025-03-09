@@ -38,6 +38,7 @@ use pocketmine\world\sound\RedstonePowerOffSound;
 use pocketmine\world\sound\RedstonePowerOnSound;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
+use pocketmine\item\Item;
 
 class WoodenPressurePlate extends SimplePressurePlate implements IRedstoneComponent, ILinkRedstoneWire{
 	use WoodTypeTrait;
