@@ -29,6 +29,7 @@ use pocketmine\item\Item;
 use pocketmine\world\sound\ChestCloseSound;
 use pocketmine\world\sound\ChestOpenSound;
 use pocketmine\world\sound\Sound;
+use pocketmine\player\Player;
 
 class DoubleChestInventory extends BaseInventory implements BlockInventory, InventoryHolder{
 	use AnimatedBlockInventoryTrait;
@@ -114,5 +115,22 @@ class DoubleChestInventory extends BaseInventory implements BlockInventory, Inve
 
 	public function getRightSide() : ChestInventory{
 		return $this->right;
+	}
+
+	public function onOpen(Player $who): void {
+        parent::onOpen($who);
+        $pos = $this->getLeftSide()->getHolder();
+        $pos->getWorld()->scheduleDelayedBlockUpdate($pos, 1);
+        $pos = $this->getRightSide()->getHolder();
+        $pos->getWorld()->scheduleDelayedBlockUpdate($pos, 1);
+    }
+
+    public function onClose(Player $who): void {
+        parent::onClose($who);
+
+        $pos = $this->getLeftSide()->getHolder();
+        $pos->getWorld()->scheduleDelayedBlockUpdate($pos, 1);
+        $pos = $this->getRightSide()->getHolder();
+        $pos->getWorld()->scheduleDelayedBlockUpdate($pos, 1);
 	}
 }
