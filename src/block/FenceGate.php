@@ -23,6 +23,11 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\PowerHelper;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\RedstonePowerUpdateEvent;
 use pocketmine\block\utils\HorizontalFacingTrait;
 use pocketmine\block\utils\SupportType;
 use pocketmine\block\utils\WoodTypeTrait;
@@ -35,9 +40,10 @@ use pocketmine\player\Player;
 use pocketmine\world\BlockTransaction;
 use pocketmine\world\sound\DoorSound;
 
-class FenceGate extends Transparent{
+class FenceGate extends Transparent implements IRedstoneComponent {
 	use WoodTypeTrait;
 	use HorizontalFacingTrait;
+	use RedstoneComponentTrait;
 
 	protected bool $open = false;
 	protected bool $inWall = false;
@@ -122,5 +128,21 @@ class FenceGate extends Transparent{
 
 	public function getFlammability() : int{
 		return $this->woodType->isFlammable() ? 20 : 0;
+	}
+
+    public function onRedstoneUpdate(): void {
+        $powered = PowerHelper::isPowered($this);
+        if ($powered === $this->isOpen()) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $this->isOpen());
+            $event->call();
+            $powered = $event->getNewPowered();
+            if ($powered === $this->isOpen()) return;
+        }
+
+        $this->setOpen($powered);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+        $this->getPosition()->getWorld()->addSound($this->getPosition(), new DoorSound());
 	}
 }
