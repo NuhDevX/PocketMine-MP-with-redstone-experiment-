@@ -32,10 +32,13 @@ use pocketmine\item\enchantment\VanillaEnchantments;
 use pocketmine\item\FlintSteel;
 use pocketmine\item\Item;
 use pocketmine\item\ItemTypeIds;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\event\block\RedstoneEvent;
 use pocketmine\math\RayTraceResult;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\utils\Random;
+use pocketmine\block\utils\PowerHelper;
 use pocketmine\world\sound\IgniteSound;
 use function cos;
 use function sin;
@@ -125,5 +128,16 @@ class TNT extends Opaque{
 		if($projectile->isOnFire()){
 			$this->ignite();
 		}
+	}
+
+    public function onRedstoneUpdate(): void {
+        if (!PowerHelper::isPowered($this)) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, true, false);
+            $event->call();
+            if (!$event->getNewPowered()) return;
+        }
+        $this->ignite();
 	}
 }
