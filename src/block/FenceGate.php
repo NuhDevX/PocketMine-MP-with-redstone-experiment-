@@ -23,11 +23,12 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+
+use pocketmine\event\block\RedstonePowerUpdateEvent;
 use pocketmine\event\block\RedstoneEvent;
 use pocketmine\block\utils\RedstoneComponentTrait;
 use pocketmine\block\utils\PowerHelper;
 use pocketmine\block\utils\IRedstoneComponent;
-use pocketmine\block\utils\RedstonePowerUpdateEvent;
 use pocketmine\block\utils\HorizontalFacingTrait;
 use pocketmine\block\utils\SupportType;
 use pocketmine\block\utils\WoodTypeTrait;
