@@ -26,12 +26,12 @@ namespace pocketmine\block;
 use pocketmine\block\utils\WoodTypeTrait;
 use pocketmine\block\utils\PowerHelper;
 use pocketmine\block\utils\RedstoneComponentTrait;
-use pocketmine\block\utils\IRedstoneComponentTrait;
+use pocketmine\block\utils\IRedstoneComponent;
 use pocketmine\world\sound\DoorSound;
 use pocketmine\event\block\RedstonePowerUpdateEvent;
 use pocketmine\event\block\RedstoneEvent;
 
-class WoodenTrapdoor extends Trapdoor implements IRedstoneComponentTrait{
+class WoodenTrapdoor extends Trapdoor implements IRedstoneComponent{
 	use WoodTypeTrait;
 	use RedstoneComponentTrait;
 
