@@ -125,33 +125,40 @@ class Chest extends Spawnable implements Container, Nameable{
 		return $this->inventory;
 	}
 
-	protected function checkPairing() : void{
-		if($this->isPaired() && !$this->position->getWorld()->isInLoadedTerrain(new Vector3($this->pairX, $this->position->y, $this->pairZ))){
-			//paired to a tile in an unloaded chunk
-			$this->doubleInventory = null;
+    protected function checkPairing(): void {
+    parent::checkPairing();
 
-		}elseif(($pair = $this->getPair()) instanceof Chest){
-			if(!$pair->isPaired()){
-				$pair->createPair($this);
-				$pair->checkPairing();
-			}
-			if($this->doubleInventory === null){
-				if($pair->doubleInventory !== null){
-					$this->doubleInventory = $pair->doubleInventory;
-				}else{
-					if(($pair->position->x + ($pair->position->z << 15)) > ($this->position->x + ($this->position->z << 15))){ //Order them correctly
-						$this->doubleInventory = $pair->doubleInventory = new DoubleChestInventory($pair->inventory, $this->inventory);
-					}else{
-						$this->doubleInventory = $pair->doubleInventory = new DoubleChestInventory($this->inventory, $pair->inventory);
-					}
-				}
-			}
-		}else{
-			$this->doubleInventory = null;
-			$this->pairX = $this->pairZ = null;
-		}
+    if ($this->isPaired() && !$this->position->getWorld()->isInLoadedTerrain(new Vector3($this->pairX, $this->position->y, $this->pairZ))) {
+        $this->doubleInventory = null;
+    } elseif (($pair = $this->getPair()) instanceof Chest) {
+        if (!$pair->isPaired()) {
+            $pair->createPair($this);
+            $pair->checkPairing();
+        }
+
+        if ($this->doubleInventory === null) {
+            if ($pair->doubleInventory !== null) {
+                $this->doubleInventory = $pair->doubleInventory;
+            } else {
+                if (($pair->position->x + ($pair->position->z << 15)) > ($this->position->x + ($this->position->z << 15))) {
+                    $this->doubleInventory = $pair->doubleInventory = new DoubleChestInventory($pair->inventory, $this->inventory);
+                } else {
+                    $this->doubleInventory = $pair->doubleInventory = new DoubleChestInventory($this->inventory, $pair->inventory);
+                }
+            }
+        }
+
+        if ($this->doubleInventory instanceof DoubleChestInventory) {
+            $inventory = new DoubleChestInventory($this->doubleInventory->getLeftSide(), $this->doubleInventory->getRightSide());
+            $this->doubleInventory = $inventory;
+            $pair->doubleInventory = $inventory;
+        }
+    } else {
+        $this->doubleInventory = null;
+        $this->pairX = $this->pairZ = null;
+      }
 	}
-
+	
 	public function getDefaultName() : string{
 		return "Chest";
 	}
