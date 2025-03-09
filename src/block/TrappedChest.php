@@ -23,8 +23,57 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
-class TrappedChest extends Chest{
+use pocketmine\math\Facing;
+use pocketmine\block\utils\AnalogRedstoneSignalEmitterTrait;
+use pocketmine\block\utils\LinkRedstoneWireTrait;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\ILinkRedstoneWire;
+use pocketmine\block\utils\UpdateHelper;
+use pocketmine\block\tile\Chest as TileChest;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstoneSignalUpdateEvent;
 
-	//TODO: Redstone!
+class TrappedChest extends Chest implements IRedstoneComponent, ILinkRedstoneWire{
+   use AnalogRedstoneSignalEmitterTrait;
+    use LinkRedstoneWireTrait;
+    use RedstoneComponentTrait;
+	
+	public function readStateFromWorld(): Block {
+        parent::readStateFromWorld();
+        $tile = $this->getPosition()->getWorld()->getTile($this->getPosition());
+        if ($tile instanceof TileChest) {
+            $this->setOutputSignalStrength(min($tile->getInventory()->getViewerCount(), 15));
+        }
+    }
+
+    public function onScheduledUpdate(): void {
+        $tile = $this->getPosition()->getWorld()->getTile($this->getPosition());
+        if (!$tile instanceof TileChest) return;
+
+        $signal = min($tile->getInventory()->getViewerCount(), 15);
+        if ($this->getOutputSignalStrength() === $signal) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstoneSignalUpdateEvent($this, $signal, $this->getOutputSignalStrength());
+            $event->call();
+            $signal = $event->getNewSignal();
+            if ($this->getOutputSignalStrength() === $signal) return;
+        }
+        $this->setOutputSignalStrength($signal);
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+    }
+
+    public function getStrongPower(int $face): int {
+        return $face === Facing::UP ? $this->getOutputSignalStrength() : 0;
+    }
+
+    public function getWeakPower(int $face): int {
+        return $this->getOutputSignalStrength();
+    }
+
+    public function isPowerSource(): bool {
+        return $this->getOutputSignalStrength() !== 0;
+}
 
 }
