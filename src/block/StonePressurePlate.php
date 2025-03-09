@@ -23,8 +23,19 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\world\sound\RedstonePowerOffSound;
+use pocketmine\world\sound\RedstonePowerOnSound;
+use pocketmine\block\utils\SupportType;
+use pocketmine\block\utils\UpdateHelper;
 use pocketmine\entity\Entity;
 use pocketmine\entity\Living;
+use pocketmine\item\Item;
+use pocketmine\player\Player;
+use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Facing;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\entity\projectile\Arrow;
 use function array_filter;
 
 class StonePressurePlate extends SimplePressurePlate{
@@ -32,4 +43,98 @@ class StonePressurePlate extends SimplePressurePlate{
 	protected function filterIrrelevantEntities(array $entities) : array{
 		return array_filter($entities, fn(Entity $e) => $e instanceof Living); //TODO: armor stands should activate stone plates too
 	}
+
+	public function onBreak(Item $item, ?Player $player = null, array &$returnedItems = []): bool {
+        parent::onBreak($item, $player, $returnedItems);
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+        return true;
+    }
+
+    public function onNearbyBlockChange(): void {
+        if ($this->canBeSupportedBy($this->getSide(Facing::DOWN))) return;
+        $this->getPosition()->getWorld()->useBreakOn($this->getPosition());
+    }
+
+    public function onScheduledUpdate(): void {
+        if (!$this->isPressed()) return;
+
+		$entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());		
+		for ($i = 0; $i < count($entities); $i++) {
+            if ($entities[$i] instanceof Arrow) {// TODO trident activate this
+				return;
+			}
+		}
+        $entities = array_filter($entities, fn($entity) => $entity instanceof Living);
+        if (count($entities) !== 0) {
+            $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), 20);
+            return;
+        }
+
+        $pressed = false;
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, false, $this->isPressed());
+            $event->call();
+            $pressed = $event->getNewPowered();
+        }
+        $this->setPressed($pressed);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+        $this->getPosition()->getWorld()->addSound($this->getPosition()->add(0.5, 0.5, 0.5), new RedstonePowerOffSound());
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+    }
+
+    public function onEntityInside(Entity $entity): bool {
+        if ($entity instanceof Player && $entity->isSpectator() || !$entity instanceof Arrow) {//TODO Trident activate this
+			return true;
+	    }
+
+        $entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());
+        $entities = array_filter($entities, fn($entity) => $entity instanceof Living);
+        if (count($entities) <= 0) return true;
+
+        if (!$this->isPressed()) {
+            $pressed = true;
+            if (RedstoneEvent::isCallEvent()) {
+                $event = new RedstonePowerUpdateEvent($this, true, $this->isPressed());
+                $event->call();
+                $pressed = $event->getNewPowered();
+            }
+            $this->setPressed($pressed);
+            $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+            $this->getPosition()->getWorld()->addSound($this->getPosition()->add(0.5, 0.5, 0.5), new RedstonePowerOnSound());
+            BlockUpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+        }
+        $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), 20);
+        return true;
+    }
+
+    public function hasEntityCollision(): bool {
+        return true;
+    }
+
+    protected function getHitCollision(): AxisAlignedBB {
+        return new AxisAlignedBB(
+            $this->getPosition()->getX() + 0.0625,
+            $this->getPosition()->getY(),
+            $this->getPosition()->getZ() + 0.0625,
+            $this->getPosition()->getX() + 0.9375,
+            $this->getPosition()->getY() + 0.0625,
+            $this->getPosition()->getZ() + 0.9375
+        );
+    }
+
+    public function getStrongPower(int $face): int {
+        return $this->isPressed() && $face == Facing::UP ? 15 : 0;
+    }
+
+    public function getWeakPower(int $face): int {
+        return $this->isPressed() ? 15 : 0;
+    }
+
+    public function isPowerSource(): bool {
+        return $this->isPressed();
+    }
+
+    private function canBeSupportedBy(Block $block): bool {
+        return !$block->getSupportType(Facing::UP)->equals(SupportType::NONE());
+    }
 }
