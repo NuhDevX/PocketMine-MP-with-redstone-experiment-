@@ -38,6 +38,7 @@ use pocketmine\math\AxisAlignedBB;
 use pocketmine\world\sound\RedstonePowerOffSound;
 use pocketmine\world\sound\RedstonePowerOnSound;
 use pocketmine\entity\Entity;
+use pocketmine\entity\projectile\Arrow;
 /**
  * @deprecated
  */
@@ -59,7 +60,13 @@ class WeightedPressurePlateLight extends WeightedPressurePlate implements IRedst
     public function onScheduledUpdate(): void {
         if ($this->getOutputSignalStrength() === 0) return;
 
-        $entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());
+        $entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());		
+		for ($i = 0; $i < count($entities); $i++) {
+            if ($entities[$i] instanceof Arrow) {// TODO trident activate this
+				return;
+			}
+		}
+		
         $count = count($entities);
         if ($count !== 0) {
             $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), 20);
@@ -85,7 +92,9 @@ class WeightedPressurePlateLight extends WeightedPressurePlate implements IRedst
     }
 
     public function onEntityInside(Entity $entity): bool {
-        if ($entity instanceof Player && $entity->isSpectator()) return true;
+        if ($entity instanceof Player && $entity->isSpectator() || !$entity instanceof Arrow) {//TODO Trident activate this
+			return true;
+	    }
 
         $entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());
         $count = count($entities);
