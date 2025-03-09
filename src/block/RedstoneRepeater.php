@@ -23,6 +23,11 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\block\utils\IRedstoneDiode;
+use pocketmine\block\utils\ILinkRedstoneWire;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\UpdateHelper;
+use pocketmine\block\utils\PowerHelper;
 use pocketmine\block\utils\HorizontalFacingTrait;
 use pocketmine\block\utils\PoweredByRedstoneTrait;
 use pocketmine\block\utils\StaticSupportTrait;
@@ -33,9 +38,11 @@ use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
 use pocketmine\world\BlockTransaction;
 
-class RedstoneRepeater extends Flowable{
+class RedstoneRepeater extends Flowable implements IRedstoneComponent, ILinkRedstoneWire, IRedstoneDiode{
 	use HorizontalFacingTrait;
 	use PoweredByRedstoneTrait;
 	use StaticSupportTrait;
@@ -86,5 +93,71 @@ class RedstoneRepeater extends Flowable{
 		return $block->getAdjacentSupportType(Facing::DOWN) !== SupportType::NONE;
 	}
 
-	//TODO: redstone functionality
+	public function onPostPlace(): void {
+        $this->onRedstoneUpdate();
+    }
+
+    public function onBreak(Item $item, ?Player $player = null, array &$returnedItems = []): bool {
+        parent::onBreak($item, $player, $returnedItems);
+        UpdateHelper::updateDiodeRedstone($this, Facing::opposite($this->getFacing()));
+        return true;
+    }
+
+    public function onScheduledUpdate(): void {
+        if ($this->isLocked()) return;
+
+        $side = PowerHelper::isSidePowered($this, $this->getFacing());
+
+        $oldPowered = $this->isPowered();
+        $powered = !$oldPowered;
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $oldPowered);
+            $event->call();
+
+            $powered = $event->getNewPowered();
+        }
+        $this->setPowered($powered);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+        UpdateHelper::updateDiodeRedstone($this, Facing::opposite($this->getFacing()));
+        if (!$oldPowered &&!$side) $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), $this->getDelay() * 2);
+    }
+
+    public function isLocked(): bool {
+        $face = Facing::rotateY($this->getFacing(), true);
+        $block = $this->getSide($face);
+        if ($block instanceof IRedstoneDiode && PowerHelper::getStrongPower($block, $face)) return true;
+
+        $face = Facing::opposite($face);
+        $block = $this->getSide($face);
+        return $block instanceof IRedstoneDiode && PowerHelper::getStrongPower($block, $face);
+    }
+
+    public function getStrongPower(int $face): int {
+        return $this->getWeakPower($face);
+    }
+
+    public function getWeakPower(int $face): int {
+        return $this->isPowered() && $face == $this->getFacing() ? 15 : 0;
+    }
+
+    public function isPowerSource(): bool {
+        return $this->isPowered();
+    }
+
+    public function onRedstoneUpdate(): void {
+        if ($this->isLocked()) return;
+
+        $side = PowerHelper::isSidePowered($this, $this->getFacing());
+        if ($side && !$this->isPowered()) {
+            $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), $this->getDelay() * 2);
+            return;
+        }
+
+        if ($side || !$this->isPowered()) return;
+        $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), $this->getDelay() * 2);
+    }
+
+    public function isConnect(int $face): bool {
+        return $face == $this->getFacing() || $face == Facing::opposite($this->getFacing());
+    }
 }
