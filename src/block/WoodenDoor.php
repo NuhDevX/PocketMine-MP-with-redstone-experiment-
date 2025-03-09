@@ -23,12 +23,58 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\PowerHelper;
 use pocketmine\block\utils\WoodTypeTrait;
+use pocketmine\world\BlockTransaction;
+use pocketmine\item\Item;
+use pocketmine\math\Vector3;
+use pocketmine\math\Facing;
+use pocketmine\world\sound\DoorSound;
+use pocketmine\player\Player;
 
-class WoodenDoor extends Door{
+class WoodenDoor extends Door implements IRedstoneComponent {
 	use WoodTypeTrait;
+	use RedstoneComponentTrait;
 
 	public function getFuelTime() : int{
 		return $this->woodType->isFlammable() ? 200 : 0;
+	}
+
+	public function place(BlockTransaction $tx, Item $item, Block $blockReplace, Block $blockClicked, int $face, Vector3 $clickVector, ?Player $player = null): bool {
+        $other = $this->getSide(Facing::UP);
+        $powered = PowerHelper::isPowered($this) || PowerHelper::isPowered($other);
+        $this->setPowered($powered);
+        return parent::place($tx, $item, $blockReplace, $blockClicked, $face, $clickVector, $player);
+    }
+
+    public function onRedstoneUpdate(): void {
+        $other = $this->getSide($this->isTop() ? Facing::DOWN : Facing::UP);
+        $powered = PowerHelper::isPowered($this) || PowerHelper::isPowered($other);
+        if ($powered === $this->isPowered()) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $this->isPowered());
+            $event->call();
+            $powered = $event->getNewPowered();
+            if ($powered === $this->isPowered()) return;
+        }
+
+        $this->setPowered($powered);
+        $world = $this->getPosition()->getWorld();
+        if ($this->isOpen() !== $powered) {
+            $this->setOpen($powered);
+            $world->addSound($this->getPosition(), new DoorSound());
+        }
+        $world->setBlock($this->getPosition(), $this);
+
+        if ($other instanceof Door && $this->isSameType($other)) {
+            $other->setPowered($this->isPowered());
+            $other->setOpen($this->isOpen());
+            $world->setBlock($other->getPosition(), $other);
+        }
 	}
 }
