@@ -24,11 +24,34 @@ declare(strict_types=1);
 namespace pocketmine\block;
 
 use pocketmine\block\utils\WoodTypeTrait;
+use pocketmine\block\utils\PowerHelper;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\IRedstoneComponentTrait;
+use pocketmine\world\sound\DoorSound;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\event\block\RedstoneEvent;
 
-class WoodenTrapdoor extends Trapdoor{
+class WoodenTrapdoor extends Trapdoor implements IRedstoneComponentTrait{
 	use WoodTypeTrait;
+	use RedstoneComponentTrait;
 
 	public function getFuelTime() : int{
 		return 300;
+	}
+
+	public function onRedstoneUpdate(): void {
+        $powered = PowerHelper::isPowered($this);
+        if ($powered === $this->isOpen()) return;
+
+		if(RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $this->isOpen());
+            $event->call();
+            $powered = $event->getNewPowered();
+            if ($powered === $this->isOpen()) return;
+		}
+
+        $this->setOpen($powered);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+        $this->getPosition()->getWorld()->addSound($this->getPosition(), new DoorSound());
 	}
 }
