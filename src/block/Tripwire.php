@@ -25,7 +25,14 @@ namespace pocketmine\block;
 
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
+use pocketmine\world\BlockTransaction;
+use pocketmine\entity\Entity;
+use pocketmine\player\Player;
 use pocketmine\item\VanillaItems;
+use pocketmine\item\ItemTypeIds;
+use pocketmine\math\Vector3;
+use pocketmine\math\AxisAlignedBB;
+use pocketmine\math\Facing;
 
 class Tripwire extends Flowable{
 	protected bool $triggered = false;
@@ -75,4 +82,101 @@ class Tripwire extends Flowable{
 	public function asItem() : Item{
 		return VanillaItems::STRING();
 	}
+
+	public function place(BlockTransaction $tx, Item $item, Block $blockReplace, Block $blockClicked, int $face, Vector3 $clickVector, ?Player $player = null): bool {
+        $this->setSuspended(true);
+        return parent::place($tx, $item, $blockReplace, $blockClicked, $face, $clickVector, $player);
+	}
+
+	public function onPostPlace(): void {
+        $faces = [Facing::SOUTH, Facing::WEST];
+        for ($i = 0; $i < count($faces); $i++) {
+            $face = $faces[$i];
+            for ($j = 1; $j < 41; $j++) {
+                $block = $this->getSide($face, $j);
+                if ($block instanceof Tripwire) continue;
+                if ($block instanceof TripwireHook && $block->getFacing() == Facing::opposite($face)) {
+                    $block->tryConnect();
+                }
+                break;
+            }
+        }
+    }
+
+    public function onBreak(Item $item, ?Player $player = null, array &$returnedItems =[]): bool {
+        parent::onBreak($item, $player, $returnedItems);
+        if (!$this->isConnected()) return true;
+
+        $faces = [Facing::SOUTH, Facing::WEST];
+        for ($i = 0; $i < count($faces); $i++) {
+            $face = $faces[$i];
+            for ($j = 1; $j < 41; $j++) {
+                $block = $this->getSide($face, $j);
+                if ($block instanceof Tripwire) 
+					continue;
+			    }
+			
+                if ($block instanceof TripwireHook && $block->getFacing() == Facing::opposite($face)) {
+                    $block->disconnect($j, $item->getTypeId() !== ItemTypeIds::SHEARS);
+                }
+                break;
+            }
+        }
+        return true;
+    }
+
+    public function onScheduledUpdate(): void {
+        if ($this->isTriggered()) {
+            $entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());
+            if (count($entities) > 0) return;
+
+            $this->setTriggered(false);
+            $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+            return;
+        }
+
+        $this->setConnected(false);
+        $this->setSuspended(false);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+    }
+
+    public function onEntityInside(Entity $entity): bool {
+        $entities = $this->getPosition()->getWorld()->getNearbyEntities($this->getHitCollision());
+        if (count($entities) <= 0) return true;
+
+        $this->setTriggered(true);
+        $world = $this->getPosition()->getWorld();
+        $world->setBlock($this->getPosition(), $this);
+        $world->scheduleDelayedBlockUpdate($this->getPosition(), 1);
+
+        $faces = [Facing::SOUTH, Facing::WEST];
+        for ($i = 0; $i < count($faces); $i++) {
+            $face = $faces[$i];
+            for ($j = 1; $j < 41; $j++) {
+                $block = $this->getSide($face, $j);
+                if ($block instanceof Tripwire) continue;
+                if ($block instanceof TripwireHook && $block->getFacing() == Facing::opposite($face)) {
+                    $block->trigger();
+                }
+                break;
+            }
+        }
+        return true;
+    }
+
+    public function hasEntityCollision(): bool {
+        return true;
+    }
+
+    protected function getHitCollision(): AxisAlignedBB {
+        return new AxisAlignedBB(
+            $this->getPosition()->getX(),
+            $this->getPosition()->getY(),
+            $this->getPosition()->getZ(),
+            $this->getPosition()->getX() + 1,
+            $this->getPosition()->getY() + 0.0625,
+            $this->getPosition()->getZ() + 1
+        );
+    }
+
 }
