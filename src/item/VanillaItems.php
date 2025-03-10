@@ -222,6 +222,9 @@ use function strtolower;
  * @method static MelonSeeds MELON_SEEDS()
  * @method static MilkBucket MILK_BUCKET()
  * @method static Minecart MINECART()
+ * @method static Minecart CHEST_MINECART()
+ * @method static Minecart HOPPER_MINECART()
+ * @method static Minecart TNT_MINECART()
  * @method static MushroomStew MUSHROOM_STEW()
  * @method static NameTag NAME_TAG()
  * @method static Item NAUTILUS_SHELL()
@@ -527,6 +530,9 @@ final class VanillaItems{
 		self::register("melon_seeds", fn(IID $id) => new MelonSeeds($id, "Melon Seeds"));
 		self::register("milk_bucket", fn(IID $id) => new MilkBucket($id, "Milk Bucket"));
 		self::register("minecart", fn(IID $id) => new Minecart($id, "Minecart"));
+		self::register("chest_minecart", fn(IID $id) => new Minecart($id, "Minecart With Chest"));
+		self::register("hopper_minecart", fn(IID $id) => new Minecart($id, "Minecart With Hopper"));
+		self::register("tnt_minecart", fn(IID $id) => new Minecart($id, "Minecart With Tnt"));
 		self::register("mushroom_stew", fn(IID $id) => new MushroomStew($id, "Mushroom Stew"));
 		self::register("name_tag", fn(IID $id) => new NameTag($id, "Name Tag"));
 		self::register("nautilus_shell", fn(IID $id) => new Item($id, "Nautilus Shell"));
