@@ -158,7 +158,8 @@ class MobHead extends Flowable implements IRedstoneComponent{
         return $this->mouthMoving;
     }
 
-    public function setMouthMoving(bool $mouthMoving): void {
+    public function setMouthMoving(bool $mouthMoving): self {
         $this->mouthMoving = $mouthMoving;
+		return $this;
 	}
 }
