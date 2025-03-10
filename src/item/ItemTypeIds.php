@@ -334,8 +334,11 @@ final class ItemTypeIds{
 	public const RECORD_CREATOR = 20295;
 	public const RECORD_CREATOR_MUSIC_BOX = 20296;
 	public const RECORD_PRECIPICE = 20297;
+	public const CHEST_MINECART = 20298;
+	public const HOPPER_MINECART = 20299;
+	public const TNT_MINECART = 20300;
 
-	public const FIRST_UNUSED_ITEM_ID = 20298;
+	public const FIRST_UNUSED_ITEM_ID = 20301;
 
 	private static int $nextDynamicId = self::FIRST_UNUSED_ITEM_ID;
 
