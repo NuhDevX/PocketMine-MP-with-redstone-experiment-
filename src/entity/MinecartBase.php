@@ -50,7 +50,7 @@ class MinecartBase extends Entity {
     protected int $rollingAmplitude = 0;
     protected bool $rollingDirection = false;
 
-    private int $state = MinecartState::STATE_INITIAL;
+    private int $state = self::STATE_INITIAL;
     private int $direction = -1;
     public array $moveVector = [];
 
