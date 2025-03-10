@@ -23,19 +23,29 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\ILinkRedstoneWire;
+use pocketmine\block\utils\LinkRedstoneWireTrait;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\UpdateHelped;
 use pocketmine\block\utils\LeverFacing;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
 use pocketmine\math\Axis;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
 use pocketmine\player\Player;
 use pocketmine\utils\AssumptionFailedError;
 use pocketmine\world\BlockTransaction;
 use pocketmine\world\sound\RedstonePowerOffSound;
 use pocketmine\world\sound\RedstonePowerOnSound;
 
-class Lever extends Flowable{
+class Lever extends Flowable implements IRedstoneComponent, ILinkRedstoneWire{
+	use LinkRedstoneWireTrait;
+    use RedstoneComponentTrait;
+	
 	protected LeverFacing $facing = LeverFacing::UP_AXIS_X;
 	protected bool $activated = false;
 
@@ -98,6 +108,15 @@ class Lever extends Flowable{
 			$this->position->add(0.5, 0.5, 0.5),
 			$this->activated ? new RedstonePowerOnSound() : new RedstonePowerOffSound()
 		);
+
+		if (RedstoneEvent::isCallEvent()) {
+            $powered = $this->isActivated();
+            $event = new RedstonePowerUpdateEvent($this, !$powered, $powered);
+            $event->call();
+		}
+		
+        parent::onInteract($item, $face, $clickVector, $player, $returnedItems);
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::opposite($this->getFacing()->getFacing()));
 		return true;
 	}
 
@@ -105,5 +124,22 @@ class Lever extends Flowable{
 		return $block->getAdjacentSupportType($face)->hasCenterSupport();
 	}
 
-	//TODO
+	public function onBreak(Item $item, ?Player $player = null, array &$returnedItems = []): bool {
+        parent::onBreak($item, $player, $returnedItems);
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::opposite($this->getFacing()->getFacing()));
+        return true;
+	}
+
+   public function getStrongPower(int $face): int {
+        if (!$this->isActivated()) return 0;
+        return $face === $this->getFacing()->getFacing() ? 15 : 0;
+    }
+
+    public function getWeakPower(int $face): int {
+        return $this->isActivated() ? 15 : 0;
+    }
+
+    public function isPowerSource(): bool {
+        return $this->isActivated();
+    }
 }
