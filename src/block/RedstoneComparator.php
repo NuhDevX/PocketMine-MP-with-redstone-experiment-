@@ -23,7 +23,17 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+
 use pocketmine\block\utils\RecordType;
+use pocketmine\block\utils\ChiseledBookshelfSlot;
+use pocketmine\block\tile\ChiseledBookshelf as TileChiseledBookshelf;
+use pocketmine\block\tile\Lectern as TileLectern;
+use pocketmine\block\tile\Cauldron as TileCauldron;
+use pocketmine\block\tile\Chest as TileChest;
+use pocketmine\block\tile\Furnace as TileFurnace;
+use pocketmine\block\tile\BrewingStand as TileBrewingStand;
+use pocketmine\block\tile\Barrel as TileBarrel;
+use pocketmine\block\tile\ShulkerBox as TileShulkerBox;
 use pocketmine\block\tile\Container;
 use pocketmine\block\tile\Comparator;
 use pocketmine\block\utils\RedstoneComponentTrait;
@@ -39,6 +49,7 @@ use pocketmine\block\utils\StaticSupportTrait;
 use pocketmine\block\utils\SupportType;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
+use pocketmine\item\ItemTypeIds;
 use pocketmine\inventory\Inventory;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
@@ -199,6 +210,12 @@ class RedstoneComparator extends Flowable implements IRedstoneComponent, ILinkRe
 
         if ($block instanceof Cake) return (7 - $block->getBites()) * 2;
         if ($block instanceof EndPortalFrame) return $block->hasEye() ? 15 : 0;
+		if ($block instanceof Furnace) {
+          if ($tile instanceof TileFurnace) {
+            return $tile->isLit() ? 15 : 0; 
+          }
+		}
+		
         if ($block instanceof Jukebox) {
             $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), 1);
             $record = $block->getRecord();
@@ -227,6 +244,124 @@ class RedstoneComparator extends Flowable implements IRedstoneComponent, ILinkRe
             if ($block->getFramedItem() === null) return 0;
             return $block->getItemRotation() + 1;
         }
+
+		if ($block instanceof BrewingStand) {
+            if ($tile instanceof TileBrewingStand) {
+               $inventory = $tile->getInventory();
+                $this->createCallBack($inventory);
+
+                $filledSlots = 0;
+                for ($slot = 0; $slot < $inventory->getSize(); $slot++) {
+                   if (!$inventory->getItem($slot)->isNull()) {
+                   $filledSlots++;
+             }
+          }
+
+           return (int) round(($filledSlots / 4) * 15);
+          }
+		}
+
+    if ($block instanceof Hopper) {    
+		if ($tile instanceof TileHopper) {
+    $inventory = $tile->getInventory();    
+    $this->createCallBack($inventory);    
+
+    if (count($inventory->getContents()) !== 0) {    
+        $stack = 0;    
+        for ($slot = 0; $slot < $inventory->getSize(); $slot++) {    
+            $item = $inventory->getItem($slot);    
+            if ($item->getTypeId() === BlockTypeIds::AIR) continue;    
+            $stack += $item->getCount() / $item->getMaxStackSize();    
+            }    
+            return 1 + ($stack / $inventory->getSize()) * 14;    
+           }    
+         return 0;    
+		  }
+		}
+
+    if (block instanceof Chest && $block instanceof TrappedChest) {
+    if ($tile instanceof TileChest) {
+        $inventory = $tile->getInventory();
+        $this->createCallBack($inventory);
+
+        $totalSlots = $inventory->getSize();
+        $filledSlots = 0;
+        $stack = 0;
+
+        foreach ($inventory->getContents() as $item) {
+            if (!$item->isNull()) {
+                $filledSlots++;
+                $stack += $item->getCount() / $item->getMaxStackSize();
+            }
+        }
+
+        if ($filledSlots > 0) {
+            $power = 1 + ($stack / $totalSlots) * 14;
+            return (int) min(15, $power);
+        }
+
+          return 0; 
+	
+   	    }
+     }
+
+		if ($block instanceof Barrel) {
+        if ($tile instanceof TileBarrel) {      
+        $inventory = $tile->getInventory();      
+        $this->createCallBack($inventory);      
+
+        if (count($inventory->getContents()) > 0) {      
+            $stack = 0;      
+            foreach ($inventory->getContents() as $item) {      
+                $stack += $item->getCount() / $item->getMaxStackSize();      
+            }      
+            $power = 1 + ($stack / $inventory->getSize()) * 14;      
+        }      
+        return $power;      
+      }
+     }
+
+		if ($block instanceof ShulkerBox) {
+    if ($tile instanceof TileShulkerBox) {
+       $inventory = $tile->getInventory();
+        $this->createCallBack($inventory);
+
+    if (count($inventory->getContents()) != 0) {
+        $stack = 0;
+        for ($slot = 0; $slot < $inventory->getSize(); $slot++) {
+            $item = $inventory->getItem($slot);
+            if ($item->getTypeId() === BlockTypeIds::AIR) continue;
+            $stack += $item->getCount() / $item->getMaxStackSize();
+            }
+             $power = 1 + ($stack / $inventory->getSize()) * 14;
+             }
+            return $power;
+           }
+		}
+
+		if ($block instanceof Cauldron) {
+        if ($tile instanceof TileCauldron) {
+            return $tile->getFillLevel(); 
+          }
+          return 0;
+		}
+
+		if ($block instanceof Lectern) {
+           if ($tile instanceof TileLectern) {
+            return min(15, $tile->getViewedPage() + 1);
+           }
+          return 0;
+		}
+
+        if ($block instanceof ChiseledBookshelf) {    
+         if ($tile instanceof TileChiseledBookshelf) {
+        $bookCount = count(array_filter(ChiseledBookshelfSlot::cases(), fn($slot) => $tile->hasSlot($slot)));
+        return $bookCount > 0 ? 1 + ($bookCount / 6) * 14 : 0; // Skala 1-15
+         }
+    
+         return 0;
+		}		
+		//minecart with hopper, minecart with chest dispenser and dropper will be coming soon
 
         if ($step === 1 && PowerHelper::isNormalBlock($block)) return $this->recalculateUtilityPower(2);
         return null;
