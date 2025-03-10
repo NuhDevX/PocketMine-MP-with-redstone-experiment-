@@ -31,9 +31,18 @@ use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\world\sound\RecordSound;
 use pocketmine\world\sound\RecordStopSound;
+use pocketmine\block\utils\UpdateHelper;
+use pocketmine\block\utils\RedstoneEvent;
+use pocketmine\block\utils\RedstonePowerUpdateEvent;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\ILinkRedstoneWire;
+use pocketmine\block\utils\LinkRedstoneWireTrait;
+use pocketmine\block\utils\RedstoneComponentTrait;
 
-class Jukebox extends Opaque{
-
+class Jukebox extends Opaque implements IRedstoneComponent, ILinkRedstoneWire{
+    use LinkRedstoneWireTrait;
+    use RedstoneComponentTrait;
+	
 	private ?Record $record = null;
 
 	public function getFuelTime() : int{
@@ -41,6 +50,12 @@ class Jukebox extends Opaque{
 	}
 
 	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null, array &$returnedItems = []) : bool{
+		if (RedstoneEvent::isCallEvent()) {
+            $powered = $this->getRecord() !== null;
+            $event = new RedstonePowerUpdateEvent($this, !$powered, $powered);
+            $event->call();
+		}
+		
 		if($player instanceof Player){
 			if($this->record !== null){
 				$this->ejectRecord();
@@ -51,7 +66,8 @@ class Jukebox extends Opaque{
 		}
 
 		$this->position->getWorld()->setBlock($this->position, $this);
-
+         parent::onInteract($item, $face, $clickVector, $player, $returnedItems);
+         UpdateHelper::updateAroundRedstone($this);
 		return true;
 	}
 
@@ -115,5 +131,11 @@ class Jukebox extends Opaque{
 		}
 	}
 
-	//TODO: Jukebox has redstone effects, they are not implemented.
+    public function getWeakPower(int $face): int {
+        return $this->getRecord() !== null ? 15 : 0;
+    }
+
+    public function isPowerSource(): bool {
+        return $this->getRecord() !== null;
+	}
 }
