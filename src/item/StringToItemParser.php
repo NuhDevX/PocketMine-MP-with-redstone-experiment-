@@ -1268,6 +1268,7 @@ final class StringToItemParser extends StringToTParser{
 		$result->register("chainmail_helmet", fn() => Items::CHAINMAIL_HELMET());
 		$result->register("chainmail_leggings", fn() => Items::CHAINMAIL_LEGGINGS());
 		$result->register("charcoal", fn() => Items::CHARCOAL());
+		$result->register("chest_minecart", fn() => Items::CHEST_MINECART());
 		$result->register("chemical_aluminium_oxide", fn() => Items::CHEMICAL_ALUMINIUM_OXIDE());
 		$result->register("chemical_ammonia", fn() => Items::CHEMICAL_AMMONIA());
 		$result->register("chemical_barium_sulphate", fn() => Items::CHEMICAL_BARIUM_SULPHATE());
@@ -1397,6 +1398,7 @@ final class StringToItemParser extends StringToTParser{
 		$result->register("golden_shovel", fn() => Items::GOLDEN_SHOVEL());
 		$result->register("golden_sword", fn() => Items::GOLDEN_SWORD());
 		$result->register("gunpowder", fn() => Items::GUNPOWDER());
+		$result->register("hopper_minecart", fn() => Items::HOPPER_MINECART());
 		$result->register("heart_of_the_sea", fn() => Items::HEART_OF_THE_SEA());
 		$result->register("honey_bottle", fn() => Items::HONEY_BOTTLE());
 		$result->register("host_armor_trim_smithing_template", fn() => Items::HOST_ARMOR_TRIM_SMITHING_TEMPLATE());
@@ -1545,6 +1547,7 @@ final class StringToItemParser extends StringToTParser{
 		$result->register("sugar", fn() => Items::SUGAR());
 		$result->register("suspicious_stew", fn() => Items::SUSPICIOUS_STEW());
 		$result->register("sweet_berries", fn() => Items::SWEET_BERRIES());
+		$result->register("tnt_minecart", fn() => Items::TNT_MINECART());
 		$result->register("tonic", fn() => Items::MEDICINE()->setType(MedicineType::TONIC));
 		$result->register("torchflower_seeds", fn() => Items::TORCHFLOWER_SEEDS());
 		$result->register("tide_armor_trim_smithing_template", fn() => Items::TIDE_ARMOR_TRIM_SMITHING_TEMPLATE());
