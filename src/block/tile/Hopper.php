@@ -33,6 +33,9 @@ class Hopper extends Spawnable implements Container, Nameable{
 	use ContainerTrait;
 	use NameableTrait;
 
+	protected int $transferCooldown = 0;
+    protected int $tickedGameTime = 0;
+
 	private const TAG_TRANSFER_COOLDOWN = "TransferCooldown";
 
 	private HopperInventory $inventory;
@@ -75,5 +78,21 @@ class Hopper extends Spawnable implements Container, Nameable{
 
 	public function getRealInventory() : HopperInventory{
 		return $this->inventory;
+	}
+
+	public function getTransferCooldown(): int {
+        return $this->transferCooldown;
+    }
+
+    public function setTransferCooldown(int $cooldown): void {
+        $this->transferCooldown = $cooldown;
+    }
+
+    public function getTickedGameTime(): int {
+        return $this->tickedGameTime;
+    }
+
+    public function setTickedGameTime(int $tick): void {
+        $this->tickedGameTime = $tick;
 	}
 }
