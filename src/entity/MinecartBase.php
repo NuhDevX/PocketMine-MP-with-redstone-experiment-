@@ -22,9 +22,6 @@
 namespace pocketmine\entity;
 
 use pocketmine\entity\object\Minecart;
-use pocketmine\item\MinecartChest;
-use pocketmine\item\MinecartHopper;
-use pocketmine\item\MinecartTNT;
 use pocketmine\utils\Rails;
 use pocketmine\block\Block;
 use pocketmine\block\BlockTypeIds;
@@ -198,9 +195,9 @@ class MinecartBase extends Entity {
     public function getMinecartItem(): Item {
         return match ($this->getNetworkTypeId()) {
             EntityIds::MINECART => VanillaItems::MINECART(),
-            EntityIds::CHEST_MINECART => new MinecartChest(),
-            EntityIds::HOPPER_MINECART => new MinecartHopper(),
-            EntityIds::TNT_MINECART => new MinecartTNT(),
+            EntityIds::CHEST_MINECART => VanillaItems::CHEST_MINECART(),
+            EntityIds::HOPPER_MINECART => VanillaItems::HOPPER_MINECARY(),
+            EntityIds::TNT_MINECART => VanillaItems::TNT_MINECART(),
         };
     }
 
