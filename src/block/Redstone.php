@@ -23,6 +23,32 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
-class Redstone extends Opaque{
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\IRedstoneWire;
+use pocketmine\block\utils\LinkRedstoneWireTrait;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\UpdateHelper;
+use pocketmine\player\Player;
+use pocketmine\item\Item;
 
+class Redstone extends Opaque implements IRedstoneComponent, ILinkRedstoneWire{
+	use LinkRedstoneWireTrait;
+    use RedstoneComponentTrait;
+
+	public function onPostPlace(): void {
+        UpdateHelper::updateAroundRedstone($this);
+    }
+
+    public function onBreak(Item $item, ?Player $player = null, array &$returnedItems = []): bool {
+        UpdateHelper::updateAroundRedstone($this);
+        return parent::onBreak($item, $player, $returnedItems);
+    }
+
+    public function getWeakPower(int $face): int {
+        return 15;
+    }
+
+    public function isPowerSource(): bool {
+        return true;
+	}
 }
