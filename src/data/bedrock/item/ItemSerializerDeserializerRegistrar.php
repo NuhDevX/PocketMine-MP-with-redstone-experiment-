@@ -193,6 +193,7 @@ final class ItemSerializerDeserializerRegistrar{
 		$this->map1to1Item(Ids::CHAINMAIL_LEGGINGS, Items::CHAINMAIL_LEGGINGS());
 		$this->map1to1Item(Ids::CHARCOAL, Items::CHARCOAL());
 		$this->map1to1Item(Ids::CHERRY_SIGN, Items::CHERRY_SIGN());
+		$this->map1toItem(Ids::CHEST_MINECART, Items::CHEST_MINECART());
 		$this->map1to1Item(Ids::CHICKEN, Items::RAW_CHICKEN());
 		$this->map1to1Item(Ids::CHORUS_FRUIT, Items::CHORUS_FRUIT());
 		$this->map1to1Item(Ids::CLAY_BALL, Items::CLAY());
@@ -263,6 +264,7 @@ final class ItemSerializerDeserializerRegistrar{
 		$this->map1to1Item(Ids::GOLDEN_SHOVEL, Items::GOLDEN_SHOVEL());
 		$this->map1to1Item(Ids::GOLDEN_SWORD, Items::GOLDEN_SWORD());
 		$this->map1to1Item(Ids::GUNPOWDER, Items::GUNPOWDER());
+		$this->map1to1Item(Ids::HOPPER_MINECART, Items::HOPPER_MINECART());
 		$this->map1to1Item(Ids::HEART_OF_THE_SEA, Items::HEART_OF_THE_SEA());
 		$this->map1to1Item(Ids::HONEY_BOTTLE, Items::HONEY_BOTTLE());
 		$this->map1to1Item(Ids::HONEYCOMB, Items::HONEYCOMB());
@@ -390,6 +392,7 @@ final class ItemSerializerDeserializerRegistrar{
 		$this->map1to1Item(Ids::SWEET_BERRIES, Items::SWEET_BERRIES());
 		$this->map1to1Item(Ids::TORCHFLOWER_SEEDS, Items::TORCHFLOWER_SEEDS());
 		$this->map1to1Item(Ids::TIDE_ARMOR_TRIM_SMITHING_TEMPLATE, Items::TIDE_ARMOR_TRIM_SMITHING_TEMPLATE());
+		$this->map1to1Item(Ids::TNT_MINECART, Items::TNT_MINECART());
 		$this->map1to1Item(Ids::TOTEM_OF_UNDYING, Items::TOTEM());
 		$this->map1to1Item(Ids::TROPICAL_FISH, Items::CLOWNFISH());
 		$this->map1to1Item(Ids::TURTLE_HELMET, Items::TURTLE_HELMET());
