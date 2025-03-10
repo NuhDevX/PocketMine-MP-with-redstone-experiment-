@@ -25,6 +25,9 @@ namespace pocketmine\block;
 
 use pocketmine\block\tile\MobHead as TileMobHead;
 use pocketmine\block\utils\MobHeadType;
+use pocketmine\block\utils\PowerHelper;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\RedstoneComponentTrait;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
 use pocketmine\math\AxisAlignedBB;
@@ -32,15 +35,19 @@ use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
 use pocketmine\world\BlockTransaction;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
 use function assert;
 use function floor;
 
-class MobHead extends Flowable{
+class MobHead extends Flowable implements IRedstoneComponent{
+	use RedstoneComponentTrait;
 	public const MIN_ROTATION = 0;
 	public const MAX_ROTATION = 15;
 
 	protected MobHeadType $mobHeadType = MobHeadType::SKELETON;
 
+	private bool $mouthMoving = false;	
 	protected int $facing = Facing::NORTH;
 	protected int $rotation = self::MIN_ROTATION; //TODO: split this into floor skull and wall skull handling
 
@@ -58,6 +65,7 @@ class MobHead extends Flowable{
 		if($tile instanceof TileMobHead){
 			$this->mobHeadType = $tile->getMobHeadType();
 			$this->rotation = $tile->getRotation();
+			$this->mouthMoving = $tile->isMouthMoving();
 		}
 
 		return $this;
@@ -70,6 +78,7 @@ class MobHead extends Flowable{
 		assert($tile instanceof TileMobHead);
 		$tile->setRotation($this->rotation);
 		$tile->setMobHeadType($this->mobHeadType);
+		$tile->setMouthMoving($this->mouthMoving);
 	}
 
 	public function getMobHeadType() : MobHeadType{
@@ -126,5 +135,30 @@ class MobHead extends Flowable{
 			$this->rotation = ((int) floor(($player->getLocation()->getYaw() * 16 / 360) + 0.5)) & 0xf;
 		}
 		return parent::place($tx, $item, $blockReplace, $blockClicked, $face, $clickVector, $player);
+	}
+
+	public function onRedstoneUpdate(): void {
+        if ($this->getMobHeadType() !== MobHeadType::DRAGON() && MobHeadType::PIGLIN()) return;
+
+        $powered = PowerHelper::isPowered($this);
+        if ($powered === $this->isMouthMoving()) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $this->isMouthMoving());
+            $event->call();
+            $powered = $event->getNewPowered();
+            if ($powered === $this->isMouthMoving()) return;
+        }
+
+        $this->setMouthMoving($powered);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+    }
+
+    public function isMouthMoving(): bool {
+        return $this->mouthMoving;
+    }
+
+    public function setMouthMoving(bool $mouthMoving): void {
+        $this->mouthMoving = $mouthMoving;
 	}
 }
