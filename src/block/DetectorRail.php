@@ -23,9 +23,11 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\ILinkRedstoneWire;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 
-class DetectorRail extends StraightOnlyRail{
+class DetectorRail extends StraightOnlyRail implements IRedstoneComponent, ILinkRedstoneWire{
 	protected bool $activated = false;
 
 	protected function describeBlockOnlyState(RuntimeDataDescriber $w) : void{
@@ -40,5 +42,12 @@ class DetectorRail extends StraightOnlyRail{
 		$this->activated = $activated;
 		return $this;
 	}
-	//TODO
+
+	public function getWeakPower(int $face): int {
+		return $this->isActive() ? 15 : 0;
+	}
+
+	public function isPowerSource(): bool {
+        return true;
+	}
 }
