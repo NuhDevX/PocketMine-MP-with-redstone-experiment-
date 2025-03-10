@@ -279,7 +279,7 @@ class RedstoneComparator extends Flowable implements IRedstoneComponent, ILinkRe
 		  }
 		}
 
-    if (block instanceof Chest && $block instanceof TrappedChest) {
+    if ($block instanceof Chest && $block instanceof TrappedChest) {
     if ($tile instanceof TileChest) {
         $inventory = $tile->getInventory();
         $this->createCallBack($inventory);
