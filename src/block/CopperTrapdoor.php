@@ -23,16 +23,23 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\PowerHelper;
 use pocketmine\block\utils\CopperMaterial;
 use pocketmine\block\utils\CopperTrait;
 use pocketmine\item\Item;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\world\sound\DoorSound;
 
-class CopperTrapdoor extends Trapdoor implements CopperMaterial{
+class CopperTrapdoor extends Trapdoor implements CopperMaterial, IRedstoneComponent{
 	use CopperTrait{
 		onInteract as onInteractCopper;
 	}
+	use RedstoneComponentTrait;
 
 	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null, array &$returnedItems = []) : bool{
 		if ($player !== null && $player->isSneaking() && $this->onInteractCopper($item, $face, $clickVector, $player, $returnedItems)) {
@@ -40,5 +47,21 @@ class CopperTrapdoor extends Trapdoor implements CopperMaterial{
 		}
 
 		return parent::onInteract($item, $face, $clickVector, $player, $returnedItems);
+	}
+
+	public function onRedstoneUpdate(): void {
+        $powered = PowerHelper::isPowered($this);
+        if ($powered === $this->isOpen()) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $this->isOpen());
+            $event->call();
+            $powered = $event->getNewPowered();
+            if ($powered === $this->isOpen()) return;
+        }
+
+        $this->setOpen($powered);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+        $this->getPosition()->getWorld()->addSound($this->getPosition(), new DoorSound());
 	}
 }
