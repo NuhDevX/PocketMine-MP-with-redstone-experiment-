@@ -25,12 +25,15 @@ namespace pocketmine\block;
 
 use pocketmine\block\utils\AnalogRedstoneSignalEmitterTrait;
 use pocketmine\block\utils\SupportType;
+use pocketmine\block\utils\UpdateHelper;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
 use pocketmine\math\AxisAlignedBB;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\event\block\RedstoneSignalUpdateEvent;
+use pocketmine\event\block\RedstoneEvent;
 use function cos;
 use function max;
 use function round;
@@ -74,6 +77,7 @@ class DaylightSensor extends Transparent{
 		$this->inverted = !$this->inverted;
 		$this->signalStrength = $this->recalculateSignalStrength();
 		$this->position->getWorld()->setBlock($this->position, $this);
+		$this->updateSignal();
 		return true;
 	}
 
@@ -85,6 +89,7 @@ class DaylightSensor extends Transparent{
 			$world->setBlock($this->position, $this);
 		}
 		$world->scheduleDelayedBlockUpdate($this->position, 20);
+		$this->updateSignal();
 	}
 
 	private function recalculateSignalStrength() : int{
@@ -98,5 +103,28 @@ class DaylightSensor extends Transparent{
 		return max(0, (int) round($lightLevel * cos(($sunAngle + ((($sunAngle < 0.5 ? 0 : 1) - $sunAngle) / 5)) * 2 * M_PI)));
 	}
 
-	//TODO
+	public function getWeakPower(int $face): int {
+        return $this->getOutputSignalStrength();
+    }
+
+    public function isPowerSource(): bool {
+        return $this->getOutputSignalStrength() > 0;
+    }
+
+    protected function updateSignal(): void {
+        $oldSignal = $this->getOutputSignalStrength();
+        $signal = $this->recalculateSignalStrength();
+        if ($oldSignal === $signal) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstoneSignalUpdateEvent($this, $signal, $oldSignal);
+            $event->call();
+            $signal = $event->getNewSignal();
+            if ($oldSignal === $signal) return;
+        }
+
+        $this->setOutputSignalStrength($signal);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+        UpdateHelper::updateAroundRedstone($this);
+	}
 }
