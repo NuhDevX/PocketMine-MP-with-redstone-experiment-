@@ -61,7 +61,7 @@ class Minecart extends Item{
                     $entity = new MinecartTNTEntity($location);
                     break;
 				default:
-
+			}
 				if ($this->hasCustomName()) {
                 $entity->setNameTag($item->getCustomName());
             }
@@ -74,8 +74,7 @@ class Minecart extends Item{
             $entity->spawnToAll();
 		    $this->pop();
 	     	return ItemUseResult::SUCCESS;
-			}
-		}
+           }
 		return ItemUseResult::NONE;
-	}
+      }
 } 
