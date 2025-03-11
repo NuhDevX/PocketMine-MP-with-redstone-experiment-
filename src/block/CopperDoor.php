@@ -23,17 +23,26 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\PowerHelper;
 use pocketmine\block\utils\CopperMaterial;
 use pocketmine\block\utils\CopperTrait;
 use pocketmine\item\Item;
 use pocketmine\math\Facing;
 use pocketmine\math\Vector3;
 use pocketmine\player\Player;
+use pocketmine\world\BlockTransaction;
+use pocketmine\item\Item;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\world\sound\DoorSound;
 
-class CopperDoor extends Door implements CopperMaterial{
+class CopperDoor extends Door implements CopperMaterial, IRedstoneComponent{
 	use CopperTrait{
 		onInteract as onInteractCopper;
 	}
+	use RedstoneComponentTrait;
 
 	public function onInteract(Item $item, int $face, Vector3 $clickVector, ?Player $player = null, array &$returnedItems = []) : bool{
 		if ($player !== null && $player->isSneaking() && $this->onInteractCopper($item, $face, $clickVector, $player, $returnedItems)) {
@@ -49,5 +58,39 @@ class CopperDoor extends Door implements CopperMaterial{
 		}
 
 		return parent::onInteract($item, $face, $clickVector, $player, $returnedItems);
+	}
+
+	public function place(BlockTransaction $tx, Item $item, Block $blockReplace, Block $blockClicked, int $face, Vector3 $clickVector, ?Player $player = null): bool {
+        $other = $this->getSide(Facing::UP);
+        $powered = PowerHelper::isPowered($this) || PowerHelper::isPowered($other);
+        $this->setPowered($powered);
+        return parent::place($tx, $item, $blockReplace, $blockClicked, $face, $clickVector, $player);
+    }
+
+    public function onRedstoneUpdate(): void {
+        $other = $this->getSide($this->isTop() ? Facing::DOWN : Facing::UP);
+        $powered = PowerHelper::isPowered($this) || PowerHelper::isPowered($other);
+        if ($powered === $this->isPowered()) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, $powered, $this->isPowered());
+            $event->call();
+            $powered = $event->getNewPowered();
+            if ($powered === $this->isPowered()) return;
+        }
+
+        $this->setPowered($powered);
+        $world = $this->getPosition()->getWorld();
+        if ($this->isOpen() !== $powered) {
+            $this->setOpen($powered);
+            $world->addSound($this->getPosition(), new DoorSound());
+        }
+        $world->setBlock($this->getPosition(), $this);
+
+        if ($other instanceof Door && $this->isSameType($other)) {
+            $other->setPowered($this->isPowered());
+            $other->setOpen($this->isOpen());
+            $world->setBlock($other->getPosition(), $other);
+        }
 	}
 }
