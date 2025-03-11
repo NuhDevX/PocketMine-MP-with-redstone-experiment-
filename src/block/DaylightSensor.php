@@ -26,6 +26,10 @@ namespace pocketmine\block;
 use pocketmine\block\utils\AnalogRedstoneSignalEmitterTrait;
 use pocketmine\block\utils\SupportType;
 use pocketmine\block\utils\UpdateHelper;
+use pocketmine\block\utils\IRedstoneComponent;
+use pocketmine\block\utils\ILinkRedstoneWire;
+use pocketmine\block\utils\LinkRedstoneWireTrait;
+use pocketmine\block\utils\RedstoneComponentTrait;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
 use pocketmine\math\AxisAlignedBB;
@@ -39,8 +43,10 @@ use function max;
 use function round;
 use const M_PI;
 
-class DaylightSensor extends Transparent{
+class DaylightSensor extends Transparent implements IRedstoneComponent, ILinkRedstoneWire{
 	use AnalogRedstoneSignalEmitterTrait;
+	use LinkRedstoneWireTrait;
+    use RedstoneComponentTrait;
 
 	protected bool $inverted = false;
 
