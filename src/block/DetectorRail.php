@@ -23,11 +23,26 @@ declare(strict_types=1);
 
 namespace pocketmine\block;
 
+use pocketmine\item\Item;
+use pocketmine\player\Player;
+use pocketmine\math\Facing;
+use pocketmine\block\utile\LinkRedstoneWireTrait;
+use pocketmine\block\utils\RedstoneComponentTrait;
+use pocketmine\block\utils\UpdateHelper;
 use pocketmine\block\utils\IRedstoneComponent;
 use pocketmine\block\utils\ILinkRedstoneWire;
 use pocketmine\data\runtime\RuntimeDataDescriber;
+use pocketmine\event\block\RedstoneEvent;
+use pocketmine\event\block\RedstonePowerUpdateEvent;
+use pocketmine\entity\Entity;
+use pocketmine\entity\object\Minecart;
+use pocketmine\entity\object\MinecartChest;
+use pocketmine\entity\object\MinecraftHopper;
+use pocketmine\entity\object\MinecraftTNT;
 
 class DetectorRail extends StraightOnlyRail implements IRedstoneComponent, ILinkRedstoneWire{
+	use LinkRedstoneWireTrait;
+    use RedstoneComponentTrait;
 	protected bool $activated = false;
 
 	protected function describeBlockOnlyState(RuntimeDataDescriber $w) : void{
@@ -43,11 +58,72 @@ class DetectorRail extends StraightOnlyRail implements IRedstoneComponent, ILink
 		return $this;
 	}
 
+	public function onBreak(Item $item, ?Player $player = null, array &$returnedItems = []) : bool{
+        parent::onBreak($item, $player);
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+		$this->updateNearbyPoweredRailAndActivatorRail(true);
+        return true;
+	}
+
 	public function getWeakPower(int $face): int {
 		return $this->isActive() ? 15 : 0;
 	}
 
 	public function isPowerSource(): bool {
         return true;
+	}
+
+	public function onScheduledUpdate(): void {
+        if (!$this->isActivated()) return;
+
+        if (RedstoneEvent::isCallEvent()) {
+            $event = new RedstonePowerUpdateEvent($this, !$this->isActivated(), $this->isActivated());
+            $event->call();
+        }
+        parent::onScheduledUpdate();
+        UpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+		$this->setActivated(false);
+        $this->getPosition()->getWorld()->setBlock($this->getPosition(), $block);
+		$this->updateNearbyPoweredRailAndActivatorRail(false);
+	}
+
+	public function onEntityInside(Entity $entity): bool {
+        if (!($entity instanceof Minecart || $entity instanceof MinecartChest || $entity instanceof MinecartHopper || $entity instanceof MinecartTNT)) return false;
+
+        if (!$this->isActivated()) {
+			$activate = true;
+            if (RedstoneEvent::isCallEvent()) {
+                $event = new RedstonePowerUpdateEvent($this, true, $this->isPressed());
+                $event->call();
+                $activate = $event->getNewPowered();
+            }
+            $this->setActivated($activate);
+            $this->getPosition()->getWorld()->setBlock($this->getPosition(), $this);
+			$this->updateNearbyPoweredRailAndActivatorRail(true);
+            UpdateHelper::updateAroundDirectionRedstone($this, Facing::DOWN);
+        }
+        $this->getPosition()->getWorld()->scheduleDelayedBlockUpdate($this->getPosition(), 20);
+        return true;
+	}
+
+    private function updateNearbyPoweredRail(bool $powered): void {
+        $world = $this->getPosition()->getWorld();
+        $x = $this->getPosition()->getX();
+        $y = $this->getPosition()->getY();
+        $z = $this->getPosition()->getZ();
+
+        $directions = [
+            [1, 0, 0],  [-1, 0, 0],  
+            [0, 0, 1],  [0, 0, -1], 
+            [0, -1, 0], [0, 1, 0]   
+        ];
+
+        foreach ($directions as [$dx, $dy, $dz]) {
+            $block = $world->getBlockAt($x + $dx, $y + $dy, $z + $dz);
+            if ($block instanceof PoweredRail || $block instanceof ActivatorRail) {
+                $block->setPowered($powered);
+                $world->setBlock($this->getPosition(), $block);
+            }
+        }
 	}
 }
