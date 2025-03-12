@@ -39,6 +39,10 @@ use pocketmine\entity\object\ItemEntity;
 use pocketmine\entity\object\Painting;
 use pocketmine\entity\object\PaintingMotive;
 use pocketmine\entity\object\PrimedTNT;
+use pocketmine\entity\object\Minecart;
+use pocketmine\entity\object\MinecartChest;
+use pocketmine\entity\object\MinecartHopper;
+use pocketmine\entity\object\MinecartTNT;
 use pocketmine\entity\projectile\Arrow;
 use pocketmine\entity\projectile\Egg;
 use pocketmine\entity\projectile\EnderPearl;
@@ -186,6 +190,22 @@ final class EntityFactory{
 		$this->register(Human::class, function(World $world, CompoundTag $nbt) : Human{
 			return new Human(Helper::parseLocation($nbt, $world), Human::parseSkinNBT($nbt), $nbt);
 		}, ['Human']);
+
+		$this->register(Minecart::class, function(World $world, CompoundTag $nbt): Minecart{
+			return new Minecart(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['Minecart', 'minecraft:minecart']);
+		
+		$this->register(MinecartChest::class, function(World $world, CompoundTag $nbt): MinecartChest{
+			return new MinecartChest(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['MinecartChest', 'minecraft:minecart_with_chest']);
+
+		$this->register(MinecartHopper::class, function(World $world, CompoundTag $nbt): MinecartHopper{
+			return new MinecartHopper(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['MinecartHopper', 'minecarft:minecart_with_hopper']);
+
+		$this->register(MinecartTNT::class, function(World $world, CompoundTag $nbt): MinecartTNT{
+			return new MinecartTNT(Helper::parseLocation($nbt, $world), $nbt);
+		}, ['MinecartTNT', 'minecarft:minecart_with_tnt']);
 	}
 
 	/**
