@@ -23,6 +23,7 @@ declare(strict_types=1);
 
 namespace pocketmine\data\bedrock\block\convert;
 
+use pocketmine\block\RuntimeBlockStateRegistry;
 use pocketmine\block\AmethystCluster;
 use pocketmine\block\Anvil;
 use pocketmine\block\Bamboo;
@@ -94,11 +95,21 @@ final class BlockStateToObjectDeserializer implements BlockStateDeserializer{
 	public function deserialize(BlockStateData $stateData) : int{
 		if(count($stateData->getStates()) === 0){
 			//if a block has zero properties, we can keep a map of string ID -> internal blockstate ID
-			return $this->simpleCache[$stateData->getName()] ??= $this->deserializeBlock($stateData)->getStateId();
+			return $this->simpleCache[$stateData->getName()] ??= $this->deserializeToStateId($stateData)
 		}
 
 		//we can't cache blocks that have properties - go ahead and deserialize the slow way
-		return $this->deserializeBlock($stateData)->getStateId();
+		return $this->deserializeToStateId($stateData);
+ 	}
+ 
+ 	private function deserializeToStateId(BlockStateData $stateData) : int{
+ 		$stateId = $this->deserializeBlock($stateData)->getStateId();
+ 		//plugin devs seem to keep missing this and causing core crashes, so we need to verify this at the earliest
+ 		//available opportunity
+ 		if(!RuntimeBlockStateRegistry::getInstance()->hasStateId($stateId)){
+ 			throw new \LogicException("State ID $stateId returned by deserializer for " . $stateData->getName() . " is not registered in RuntimeBlockStateRegistry");
+ 		}
+ 		return $stateId;
 	}
 
 	/** @phpstan-param \Closure(Reader) : Block $c */
