@@ -130,6 +130,10 @@ class RuntimeBlockStateRegistry{
 		return $block;
 	}
 
+   public function hasStateId(int $stateId) : bool{
+ 		return isset($this->fullList[$stateId]);
+   }
+
 	/**
 	 * @return Block[]
 	 * @phpstan-return array<int, Block>
