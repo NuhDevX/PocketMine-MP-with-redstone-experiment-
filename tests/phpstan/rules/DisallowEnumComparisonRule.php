@@ -24,68 +24,32 @@ declare(strict_types=1);
 namespace pocketmine\phpstan\rules;
 
 use PhpParser\Node;
-use PhpParser\Node\Expr\BinaryOp;
-use PhpParser\Node\Expr\BinaryOp\Identical;
-use PhpParser\Node\Expr\BinaryOp\NotIdentical;
+use PhpParser\Node\Expr;
+use PhpParser\Node\Expr\New_;
 use PHPStan\Analyser\Scope;
 use PHPStan\Rules\Rule;
 use PHPStan\Rules\RuleErrorBuilder;
-use PHPStan\Type\Type;
-use PHPStan\Type\UnionType;
-use PHPStan\Type\VerbosityLevel;
-use pocketmine\utils\EnumTrait;
-use function sprintf;
 
 /**
- * @phpstan-implements Rule<BinaryOp>
+ * @phpstan-implements Rule<New_>
  */
-class DisallowEnumComparisonRule implements Rule{
+final class DisallowDynamicNewRule implements Rule{
 
 	public function getNodeType() : string{
-		return BinaryOp::class;
+		return New_::class;
 	}
 
 	public function processNode(Node $node, Scope $scope) : array{
-		if(!($node instanceof Identical) && !($node instanceof NotIdentical)){
-			return [];
+		/** @var New_ $node */
+		if($node->class instanceof Expr){
+			return [
+				RuleErrorBuilder::message("Dynamic new is not allowed.")
+					->tip("For factories, use closures instead. Closures can implement custom logic, are statically analyzable, and don't restrict the constructor signature.")
+					->identifier("pocketmine.new.dynamic")
+					->build()
+			];
 		}
 
-		$leftType = $scope->getType($node->left);
-		$rightType = $scope->getType($node->right);
-		$leftEnum = $this->checkForEnumTypes($leftType);
-		$rightEnum = $this->checkForEnumTypes($rightType);
-		if($leftEnum && $rightEnum){
-			return [RuleErrorBuilder::message(sprintf(
-				'Strict comparison using %s involving enum types %s and %s is not reliable.',
-				$node instanceof Identical ? '===' : '!==',
-				$leftType->describe(VerbosityLevel::value()),
-				$rightType->describe(VerbosityLevel::value())
-			))->identifier('pocketmine.enum.badComparison')->build()];
-		}
 		return [];
-	}
-
-	private function checkForEnumTypes(Type $comparedType) : bool{
-		//TODO: what we really want to do here is iterate over the contained types, but there's no universal way to
-		//do that. This might break with other circumstances.
-		if($comparedType->isObject()->yes()){
-			$types = [$comparedType];
-		}elseif($comparedType instanceof UnionType){
-			$types = $comparedType->getTypes();
-		}else{
-			return false;
-		}
-		foreach($types as $containedType){
-			if(!($containedType->isObject()->yes())){
-				continue;
-			}
-			$classes = $containedType->getObjectClassReflections();
-			foreach($classes as $class){
-				if($class->hasTraitUse(EnumTrait::class)){
-					return true;
-				}
-			}
-		}
-		return false;
 	}
 }
