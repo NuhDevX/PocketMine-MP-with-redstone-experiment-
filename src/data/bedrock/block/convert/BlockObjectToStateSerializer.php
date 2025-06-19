@@ -236,6 +236,10 @@ final class BlockObjectToStateSerializer implements BlockStateSerializer{
 		$this->serializers[$block->getTypeId()] = $serializer;
 	}
 
+	public function isRegistered(Block $block) : bool{
+		return isset($this->serializers[$block->getTypeId()]);
+    }
+
 	public function mapSimple(Block $block, string $id) : void{
 		$this->map($block, fn() => Writer::create($id));
 	}
