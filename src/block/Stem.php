@@ -24,12 +24,13 @@ declare(strict_types=1);
 namespace pocketmine\block;
 
 use pocketmine\block\utils\BlockEventHelper;
+use pocketmine\block\utils\FortuneDropHelper;
 use pocketmine\block\utils\CropGrowthHelper;
 use pocketmine\data\runtime\RuntimeDataDescriber;
 use pocketmine\item\Item;
+use pocketmine\item\VanillaItems;
 use pocketmine\math\Facing;
 use function array_rand;
-use function mt_rand;
 
 abstract class Stem extends Crops{
 	protected int $facing = Facing::UP;
@@ -91,7 +92,7 @@ abstract class Stem extends Crops{
 
 	public function getDropsForCompatibleTool(Item $item) : array{
 		return [
-			$this->asItem()->setCount(mt_rand(0, 2))
+			$this->asItem()->setCount(FortuneDropHelper::binomial(VanillaItems::AIR(), 0, chance: ($this->age + 1) / 15))
 		];
 	}
 }
