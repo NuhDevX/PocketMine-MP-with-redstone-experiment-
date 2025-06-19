@@ -33,6 +33,7 @@ use pocketmine\network\mcpe\protocol\types\biome\BiomeDefinitionEntry;
 use pocketmine\network\mcpe\protocol\types\CacheableNbt;
 use pocketmine\utils\Filesystem;
 use pocketmine\utils\SingletonTrait;
+use pocketmine\utils\Utils;
 use pocketmine\world\biome\model\BiomeDefinitionEntryData;
 use function count;
 use function get_debug_type;
