@@ -74,7 +74,7 @@ class PreSpawnPacketHandler extends PacketHandler{
 			$levelSettings->worldGamemode = $typeConverter->coreGameModeToProtocol($this->server->getGamemode());
 			$levelSettings->difficulty = $world->getDifficulty();
 			$levelSettings->spawnPosition = BlockPosition::fromVector3($world->getSpawnLocation());
-			$levelSettings->hasAchievementsDisabled = true;
+			$levelSettings->hasAchievementsDisabled = false;
 			$levelSettings->time = $world->getTime();
 			$levelSettings->eduEditionOffer = 0;
 			$levelSettings->rainLevel = 0; //TODO: implement these properly
@@ -82,6 +82,7 @@ class PreSpawnPacketHandler extends PacketHandler{
 			$levelSettings->commandsEnabled = true;
 			$levelSettings->gameRules = [
 				"naturalregeneration" => new BoolGameRule(false, false) //Hack for client side regeneration
+				"locatorbar" => new BoolGameRule(false, false) //Disable client-side tracking of nearby players
 			];
 			$levelSettings->experiments = new Experiments([], false);
 
